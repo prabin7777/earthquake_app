@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Earthquake Data Visualization - NAST</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .progress-bar-inner { transition: width 0.4s ease-in-out; }
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 1000; opacity: 0; transition: opacity 0.3s;
+        }
+        .modal-overlay.visible { opacity: 1; }
+        .modal-content {
+            background: white; padding: 2rem; border-radius: 0.75rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            max-width: 95%; width: 500px; text-align: center;
+            transform: scale(0.95); transition: transform 0.3s;
+        }
+        .modal-overlay.visible .modal-content { transform: scale(1); }
+        .terminal {
+            background-color: #1a202c;
+            color: #a0aec0;
+            font-family: 'Fira Code', monospace;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            height: 400px;
+            overflow-y: scroll;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 p-4 sm:p-6 lg:p-8">
+
+<div id="root" class="max-w-7xl mx-auto"></div>
+
+<script type="text/babel">
+    const { useState, useEffect, useCallback } = React;
+
+    // --- Custom Modal Component ---
+    const CustomAlertModal = ({ message, onClose, type = 'info' }) => {
+        const colors = {
+            info: 'blue',
+            success: 'green',
+            error: 'red'
+        };
+        const color = colors[type] || 'blue';
+
+        return (
+            <div className="modal-overlay visible">
+                <div className="modal-content">
+                    <h3 className={`text-xl font-bold mb-4 text-${color}-600`}>
+                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                    </h3>
+                    <p className="text-gray-700 text-lg mb-6">{message}</p>
+                    <button
+                        onClick={onClose}
+                        className={`bg-${color}-600 hover:bg-${color}-700 text-white font-bold py-2 px-6 rounded-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-${color}-500`}
+                    >
+                        OK
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
+    // --- Main Application Component ---
+    const App = () => {
+        const [earthquakeName, setEarthquakeName] = useState("Nepal_Earthquake");
+        const [eventTime, setEventTime] = useState(new Date().toISOString().slice(0, 16));
+        const [latitude, setLatitude] = useState("28.2292");
+        const [longitude, setLongitude] = useState("84.3985");
+        const [magnitude, setMagnitude] = useState("5.8");
+        const [deltaTime, setDeltaTime] = useState(15);
+        
+        const [useFilter, setUseFilter] = useState(true);
+        const [cutoffFrequency, setCutoffFrequency] = useState(10.0);
+
+        const [progress, setProgress] = useState(0);
+        const [isProcessing, setIsProcessing] = useState(false);
+        const [modal, setModal] = useState({ show: false, message: '', type: 'info' });
+        const [processedEvents, setProcessedEvents] = useState([]);
+        const [batchFile, setBatchFile] = useState(null);
+        const [terminalOutput, setTerminalOutput] = useState("Terminal output will appear here...");
+
+        const showAlert = (message, type = 'info') => setModal({ show: true, message, type });
+        const closeAlert = () => setModal({ show: false, message: '', type: 'info' });
+
+        const fetchEvents = useCallback(() => {
+            fetch('http://127.0.0.1:5000/get_events')
+                .then(res => res.json())
+                .then(data => setProcessedEvents(data.events || []))
+                .catch(err => console.error("Could not fetch events:", err));
+        }, []);
+
+        useEffect(() => {
+            fetchEvents();
+        }, [fetchEvents]);
+
+        const handleBatchFileChange = (event) => {
+            const file = event.target.files[0];
+            if (file && (file.name.endsWith('.json') || file.name.endsWith('.csv'))) {
+                setBatchFile(file);
+            } else {
+                showAlert('Please select a valid .json or .csv file.', 'error');
+                setBatchFile(null);
+            }
+        };
+        
+        const handleBatchProcess = () => {
+            if (!batchFile) {
+                showAlert('No batch file selected.', 'error');
+                return;
+            }
+            if (isProcessing) return;
+
+            setTerminalOutput("Starting batch process...");
+            const formData = new FormData();
+            formData.append('batch_file', batchFile);
+            formData.append('use_filter', useFilter);
+            formData.append('cutoff_frequency', cutoffFrequency);
+
+            setIsProcessing(true);
+            setProgress(0);
+            const progressInterval = setInterval(() => setProgress(p => Math.min(p + 2, 98)), 1000);
+
+            fetch('http://127.0.0.1:5000/batch_process', {
+                method: 'POST',
+                body: formData,
+            })
+            .then(res => res.json().then(data => ({ ok: res.ok, data })))
+            .then(({ ok, data }) => {
+                setTerminalOutput(data.stdout + "\n" + data.stderr);
+                if (!ok) throw new Error(data.message || 'Batch processing failed.');
+                showAlert(data.message, 'success');
+                fetchEvents();
+            })
+            .catch(err => showAlert(err.message, 'error'))
+            .finally(() => {
+                clearInterval(progressInterval);
+                setProgress(100);
+                setIsProcessing(false);
+                setBatchFile(null);
+            });
+        };
+
+
+        const handleDownload = () => {
+            if (!earthquakeName || !latitude || !longitude || !magnitude) {
+                showAlert("Please fill all earthquake details before downloading.", "error");
+                return;
+            }
+            if (isProcessing) return;
+
+            setTerminalOutput("Starting single event process...");
+            setIsProcessing(true);
+            setProgress(0);
+            const progressInterval = setInterval(() => setProgress(p => Math.min(p + 5, 95)), 500);
+
+            fetch("http://127.0.0.1:5000/download_raspberry", {
+                method: "POST",
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    event_name: earthquakeName,
+                    event_time: new Date(eventTime).toISOString(),
+                    delta_time: deltaTime,
+                    latitude: parseFloat(latitude),
+                    longitude: parseFloat(longitude),
+                    magnitude: parseFloat(magnitude),
+                    use_filter: useFilter,
+                    cutoff_frequency: parseFloat(cutoffFrequency)
+                })
+            })
+            .then(res => res.json().then(data => ({ ok: res.ok, data })))
+            .then(({ ok, data }) => {
+                setTerminalOutput(data.stdout + "\n" + data.stderr);
+                if (!ok) throw new Error(data.message || 'Download and analysis failed.');
+                showAlert(data.message, 'success');
+                fetchEvents();
+            })
+            .catch(err => {
+                setTerminalOutput(err.message);
+                showAlert(err.message, 'error');
+            })
+            .finally(() => {
+                clearInterval(progressInterval);
+                setProgress(100);
+                setIsProcessing(false);
+            });
+        };
+
+        const openPdf = (eventName, fileType) => {
+            window.open(`http://127.0.0.1:5000/download/${eventName}/${fileType}`, "_blank");
+        };
+
+        return (
+            <div className="space-y-8">
+                {modal.show && <CustomAlertModal message={modal.message} onClose={closeAlert} type={modal.type} />}
+
+                <header className="text-center p-6 bg-white rounded-xl shadow-md">
+                    <h1 className="text-4xl font-extrabold text-indigo-700">Earthquake Data Visualization</h1>
+                    <p className="text-lg text-gray-600 mt-2">Nepal Academy of Science and Technology (NAST)</p>
+                </header>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* --- Control Panel --- */}
+                    <div className="bg-white p-8 rounded-xl shadow-lg space-y-6">
+                        <h2 className="text-2xl font-bold text-gray-800 border-b-2 pb-2 border-gray-200">1. Define Earthquake Event</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-600 mb-1">Event Name</label>
+                                <input type="text" value={earthquakeName} onChange={e => setEarthquakeName(e.target.value)} className="w-full p-2 border rounded-md" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-600 mb-1">Event Time (UTC)</label>
+                                <input type="datetime-local" value={eventTime} onChange={e => setEventTime(e.target.value)} className="w-full p-2 border rounded-md" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-600 mb-1">Latitude</label>
+                                <input type="number" value={latitude} onChange={e => setLatitude(e.target.value)} className="w-full p-2 border rounded-md" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-600 mb-1">Longitude</label>
+                                <input type="number" value={longitude} onChange={e => setLongitude(e.target.value)} className="w-full p-2 border rounded-md" />
+                            </div>
+                             <div>
+                                <label className="block text-sm font-medium text-gray-600 mb-1">Magnitude</label>
+                                <input type="number" step="0.1" value={magnitude} onChange={e => setMagnitude(e.target.value)} className="w-full p-2 border rounded-md" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-600 mb-1">Time Window (mins)</label>
+                                <input type="number" value={deltaTime} onChange={e => setDeltaTime(parseInt(e.target.value, 10))} className="w-full p-2 border rounded-md" />
+                            </div>
+                        </div>
+
+                        <h2 className="text-2xl font-bold text-gray-800 border-b-2 pb-2 border-gray-200 pt-4">2. Filtering Options</h2>
+                        <div className="space-y-4">
+                            <div className="flex items-center">
+                                <input id="use-filter" type="checkbox" checked={useFilter} onChange={e => setUseFilter(e.target.checked)} className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" />
+                                <label htmlFor="use-filter" className="ml-3 block text-sm font-medium text-gray-700">Apply 2nd Order Butterworth Low-pass Filter</label>
+                            </div>
+                            {useFilter && (
+                                <div>
+                                    <label htmlFor="cutoff-freq" className="block text-sm font-medium text-gray-600 mb-1">Cutoff Frequency (Hz)</label>
+                                    <input id="cutoff-freq" type="number" step="0.1" value={cutoffFrequency} onChange={e => setCutoffFrequency(parseFloat(e.target.value))} className="w-full p-2 border rounded-md" />
+                                </div>
+                            )}
+                        </div>
+
+                        <h2 className="text-2xl font-bold text-gray-800 border-b-2 pb-2 border-gray-200 pt-4">3. Get Data & Process</h2>
+                        
+                        <div className="bg-gray-50 p-4 rounded-lg border">
+                             <h3 className="font-semibold text-lg mb-2 text-gray-700">Option A: Process Single Event</h3>
+                             <p className="text-sm text-gray-500 mb-4">Fetches data for Nepal stations from the server based on the event details above.</p>
+                             <button onClick={handleDownload} disabled={isProcessing} className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg disabled:bg-gray-400 transition-all duration-300">
+                                {isProcessing ? 'Processing...' : 'Download & Analyze Single Event'}
+                            </button>
+                        </div>
+                        
+                        <div className="bg-gray-50 p-4 rounded-lg border">
+                            <h3 className="font-semibold text-lg mb-2 text-gray-700">Option B: Batch Process from File</h3>
+                            <p className="text-sm text-gray-500 mb-4">Upload a .json or .csv file with a list of events to process them all at once.</p>
+                             <div className="flex items-center space-x-4">
+                               <div className="file-input-container">
+                                    <label htmlFor="batch-file-upload" className="file-input-label bg-purple-600 hover:bg-purple-700">Choose File</label>
+                                    <input id="batch-file-upload" type="file" accept=".json,.csv" onChange={handleBatchFileChange} disabled={isProcessing} />
+                                </div>
+                                <span className="text-gray-600 flex-1 truncate">{batchFile ? batchFile.name : 'No file selected'}</span>
+                            </div>
+                             <button onClick={handleBatchProcess} disabled={isProcessing || !batchFile} className="w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg disabled:bg-gray-400 transition-all duration-300">
+                                {isProcessing ? 'Processing...' : 'Process Batch File'}
+                            </button>
+                        </div>
+                        
+                        {isProcessing && (
+                            <div className="w-full bg-gray-200 rounded-full h-4 mt-4">
+                                <div className="progress-bar-inner bg-indigo-600 h-4 rounded-full" style={{ width: `${progress}%` }}></div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* --- Processed Events Panel --- */}
+                    <div className="bg-white p-8 rounded-xl shadow-lg">
+                        <h2 className="text-2xl font-bold text-gray-800 border-b-2 pb-2 border-gray-200">4. View & Download Results</h2>
+                        <div className="mt-4 space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                            {processedEvents.length > 0 ? (
+                                processedEvents.map(event => (
+                                    <div key={event.name} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                        <h3 className="font-bold text-lg text-indigo-800">{event.name.replace(/_/g, ' ')}</h3>
+                                        <p className="text-sm text-gray-600">Magnitude: {event.magnitude} | {new Date(event.time).toLocaleString()}</p>
+                                        <div className="mt-3 flex flex-wrap gap-2">
+                                            <button onClick={() => openPdf(event.name, 'shakemap.pdf')} className="bg-gray-700 hover:bg-gray-800 text-white text-sm font-semibold py-2 px-4 rounded-md transition">ShakeMap</button>
+                                            <button onClick={() => openPdf(event.name, 'record_section.pdf')} className="bg-gray-700 hover:bg-gray-800 text-white text-sm font-semibold py-2 px-4 rounded-md transition">Record Section</button>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-center text-gray-500 py-8">No processed events found. Please download or upload data to begin.</p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+                
+                {/* --- NEW: Terminal Output --- */}
+                <div className="bg-white p-8 rounded-xl shadow-lg mt-8">
+                    <h2 className="text-2xl font-bold text-gray-800 border-b-2 pb-2 border-gray-200 mb-4">Terminal Output</h2>
+                    <div className="terminal">
+                        <pre>{terminalOutput}</pre>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    ReactDOM.createRoot(document.getElementById('root')).render(
+        <React.StrictMode>
+            <App />
+        </React.StrictMode>
+    );
+
+</script>
+
+<!-- Load React and Babel -->
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+    "name": "Nepal_Earthquake",
+    "time_utc": "2025-07-07T12:40:00.000Z",
+    "latitude": 28.2292,
+    "longitude": 84.3985,
+    "magnitude": 5.8,
+    "station_count": 13,
+    "shakemap_file": "Nepal_Earthquake_shakemap.pdf",
+    "output_directory": "C:\\Users\\TRITON\\Desktop\\earthquake_app\\Output\\Nepal_Earthquake"
+}
