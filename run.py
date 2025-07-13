@@ -5,7 +5,7 @@ import re
 
 # Import the main analysis function and the configuration paths
 from src.main import main as run_analysis
-from config import EVENT_CSV_PATH , USE_FILTRE , CUT_OFF_FREQ, 
+from config import EVENT_CSV_PATH , USE_FILTRE , CUT_OFF_FREQ 
 
 def run_from_command_line():
     """
@@ -48,7 +48,7 @@ def run_from_command_line():
                 latitude=float(event['latitude']),
                 longitude=float(event['longitude']),
                 magnitude=float(event['mag']),
-                use_filter= USE_FILTRE # Default to using the filter
+                use_filter= USE_FILTRE, # Default to using the filter
                 cutoff_frequency= CUT_OFF_FREQ # Default cutoff frequency
             )
             success_count += 1

@@ -17,7 +17,7 @@ sys.path.insert(0, ROOT_DIR)
 sys.path.insert(0, os.path.join(ROOT_DIR, 'src'))
 
 # --- Imports ---
-from main import main as run_analysis
+from src.main import main as run_analysis
 from config import OUTPUT_DIR
 
 # --- Initialization ---
