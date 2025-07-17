@@ -6,5 +6,5 @@
     "magnitude": 7.1,
     "station_count": 23,
     "shakemap_file": "2025_Southern_Tibetan_Plateau_Earthquake_shakemap.pdf",
-    "output_directory": "C:\\Users\\TRITON\\Desktop\\earthquake_app\\Output\\2025_Southern_Tibetan_Plateau_Earthquake"
+    "output_directory": "/Users/satabdigautam/NAST/python_apps/earthquake_app/Output/2025_Southern_Tibetan_Plateau_Earthquake"
 }
