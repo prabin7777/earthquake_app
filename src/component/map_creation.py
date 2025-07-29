@@ -1,5 +1,8 @@
 
 # --- src/component/map_creation.py ---
+import matplotlib
+matplotlib.use("Agg")  # Use a non-GUI backend for macos
+import matplotlib.pyplot as plt
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature

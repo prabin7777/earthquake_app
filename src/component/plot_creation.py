@@ -1,4 +1,7 @@
 import os
+import matplotlib
+matplotlib.use("Agg")  # Use a non-GUI backend for macos
+import matplotlib.pyplot as plt
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import numpy as np

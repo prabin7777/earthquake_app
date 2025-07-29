@@ -1,0 +1,10 @@
+{
+    "name": "Nepal_Earthquake123456",
+    "time_utc": "2025-06-17T05:24:00.000Z",
+    "latitude": 28.2292,
+    "longitude": 84.3985,
+    "magnitude": 5.8,
+    "station_count": 7,
+    "shakemap_file": "Nepal_Earthquake123456_shakemap.pdf",
+    "output_directory": "/Users/satabdigautam/NAST/python_apps/earthquake_app/Output/Nepal_Earthquake123456"
+}
