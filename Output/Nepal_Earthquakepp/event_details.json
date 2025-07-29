@@ -1,0 +1,10 @@
+{
+    "name": "Nepal_Earthquakepp",
+    "time_utc": "2025-07-17T04:42:00.000Z",
+    "latitude": 28.2292,
+    "longitude": 84.3985,
+    "magnitude": 5.8,
+    "station_count": 11,
+    "shakemap_file": "Nepal_Earthquakepp_shakemap.pdf",
+    "output_directory": "/home/damodar/Documents/earth_app/earthquake_app/Output/Nepal_Earthquakepp"
+}

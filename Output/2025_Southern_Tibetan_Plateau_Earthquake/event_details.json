@@ -1,0 +1,10 @@
+{
+    "name": "2025_Southern_Tibetan_Plateau_Earthquake",
+    "time_utc": "2025-01-07T01:05:16.734Z",
+    "latitude": 28.6036,
+    "longitude": 87.3781,
+    "magnitude": 7.1,
+    "station_count": 23,
+    "shakemap_file": "2025_Southern_Tibetan_Plateau_Earthquake_shakemap.pdf",
+    "output_directory": "/home/damodar/Documents/earth_app/earthquake_app/Output/2025_Southern_Tibetan_Plateau_Earthquake"
+}
