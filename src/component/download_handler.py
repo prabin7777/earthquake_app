@@ -20,8 +20,8 @@ def download_raspberry_data(event_name, event_time, delta_time, latitude, longit
     """Downloads seismic data for all Nepal stations from FDSN Dataselect."""
     os.makedirs(output_folder, exist_ok=True)
     
-    start_time = (event_time - timedelta(minutes=delta_time)).strftime('%Y-%m-%dT%H:%M:%S')
-    end_time = (event_time + timedelta(minutes=delta_time)).strftime('%Y-%m-%dT%H:%M:%S')
+    start_time = event_time.strftime('%Y-%m-%dT%H:%M:%S')
+    end_time = (event_time + timedelta(minutes=3*delta_time)).strftime('%Y-%m-%dT%H:%M:%S')
     
     nepal_stations = get_nepal_stations()
     print(f"Querying data for {len(nepal_stations)} stations from {start_time} to {end_time}")
