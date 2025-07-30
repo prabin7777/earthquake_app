@@ -1,0 +1,10 @@
+{
+    "name": "89_km_NE_of_Kh__db_ri____Nepal",
+    "time_utc": "2025-04-15T22:20:34.826Z",
+    "latitude": 28.0012,
+    "longitude": 87.7827,
+    "magnitude": 4.2,
+    "station_count": 12,
+    "shakemap_file": "89_km_NE_of_Kh__db_ri____Nepal_shakemap.pdf",
+    "output_directory": "/Users/satabdigautam/NAST/python_apps/earthquake_app/Output/89_km_NE_of_Kh__db_ri____Nepal"
+}

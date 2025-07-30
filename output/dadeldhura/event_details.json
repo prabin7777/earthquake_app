@@ -1,0 +1,10 @@
+{
+    "name": "dadeldhura",
+    "time_utc": "2025-05-22T20:03:00.000Z",
+    "latitude": 29.472,
+    "longitude": 80.466,
+    "magnitude": 3,
+    "station_count": 5,
+    "shakemap_file": "dadeldhura_shakemap.pdf",
+    "output_directory": "/Users/satabdigautam/NAST/python_apps/earthquake_app/Output/dadeldhura"
+}
